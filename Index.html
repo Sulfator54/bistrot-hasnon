@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bistrot de Hasnon — Système de commande</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script type="module">
+// ══ FIREBASE INIT ══
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, push, set, onValue, update, remove, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB8vuKbX_ECrisSO3K1L6KkXpM-Uj_F7Eo",
+  authDomain: "bistrot-hasnon.firebaseapp.com",
+  databaseURL: "https://bistrot-hasnon-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "bistrot-hasnon",
+  storageBucket: "bistrot-hasnon.firebasestorage.app",
+  messagingSenderId: "588360205379",
+  appId: "1:588360205379:web:1bfbb358c1415eb54640f6"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Expose Firebase helpers to global scope
+window._fb = { ref, push, set, onValue, update, remove, get, db };
+window._fbReady = true;
+window.dispatchEvent(new Event('fbReady'));
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --dark: #0f0b05;
+  --gold: #c49a3c;
+  --gold-light: #e8c97a;
+  --cream: #f7f2e8;
+  --cream-dark: #ede5d0;
+  --green: #2d5a27;
+  --green-light: #e8f2e7;
+  --red: #8b2020;
+  --red-light: #fce8e8;
+  --amber: #92580a;
+  --amber-light: #fdf0dc;
+  --blue: #1a3a5c;
+  --blue-light: #e4eef8;
+  --surface: #ffffff;
+  --border: rgba(0,0,0,0.1);
+  --text: #1a1208;
+  --text-muted: #6b5e4a;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); }
+h1,h2,h3 { font-family: 'Playfair Display', serif; }
+
+/* ── NAV ── */
+.nav { background: var(--dark); display: flex; align-items: center; gap: 0; border-bottom: 1px solid rgba(196,154,60,0.3); }
+.nav-brand { padding: 14px 20px; font-family: 'Playfair Display', serif; font-size: 15px; color: var(--gold); border-right: 1px solid rgba(196,154,60,0.2); white-space: nowrap; }
+.nav-tabs { display: flex; flex: 1; overflow-x: auto; scrollbar-width: none; }
+.nav-tabs::-webkit-scrollbar { display: none; }
+.nav-tab { padding: 14px 20px; font-size: 13px; color: rgba(247,242,232,0.6); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.2s; border: none; background: none; font-family: 'DM Sans', sans-serif; }
+.nav-tab.active { color: var(--gold-light); border-bottom-color: var(--gold); }
+.nav-tab:hover:not(.active) { color: var(--cream); }
+.live-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; padding: 3px 8px; border-radius: 20px; background: rgba(45,90,39,0.3); color: #7cc876; margin-left: 8px; }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: #7cc876; animation: blink 1.5s infinite; }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+/* ── VIEWS ── */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ══════════════════════════════
+   VIEW 1 — MENU CLIENT (mobile)
+   ══════════════════════════════ */
+.menu-shell { max-width: 430px; margin: 0 auto; background: var(--dark); min-height: calc(100vh - 49px); }
+.menu-hero { background: var(--dark); color: var(--cream); padding: 24px 20px 16px; position: relative; overflow: hidden; }
+.menu-hero::before { content:''; position:absolute; top:-60px; right:-60px; width:180px; height:180px; border-radius:50%; background: rgba(196,154,60,0.08); }
+.restaurant-name { font-size: 26px; color: var(--gold-light); }
+.table-info { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.table-select-wrap { position: relative; }
+.table-select-wrap select { background: rgba(196,154,60,0.15); border: 1px solid rgba(196,154,60,0.4); color: var(--gold-light); font-size: 13px; padding: 5px 28px 5px 10px; border-radius: 20px; appearance: none; font-family: 'DM Sans', sans-serif; cursor: pointer; }
+.table-select-wrap::after { content:'▾'; position:absolute; right:10px; top:50%; transform:translateY(-50%); color:var(--gold-light); font-size:11px; pointer-events:none; }
+.menu-cats { display: flex; gap: 0; background: #1a1510; overflow-x: auto; scrollbar-width: none; padding: 0 16px; }
+.menu-cats::-webkit-scrollbar { display: none; }
+.cat-tab { flex-shrink: 0; padding: 12px 16px; font-size: 13px; color: rgba(247,242,232,0.5); cursor: pointer; border-bottom: 2px solid transparent; background: none; border-top: none; border-left: none; border-right: none; font-family: 'DM Sans', sans-serif; transition: all 0.2s; white-space: nowrap; }
+.cat-tab.active { color: var(--gold-light); border-bottom-color: var(--gold); }
+.menu-items { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 110px; background: var(--cream); min-height: 400px; }
+.menu-section-label { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); padding: 4px 0 2px; }
+.menu-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; display: flex; gap: 12px; cursor: pointer; transition: border-color 0.15s; }
+.menu-item:hover { border-color: var(--gold); }
+.item-img { width: 58px; height: 58px; border-radius: var(--radius-sm); background: var(--amber-light); display: flex; align-items: center; justify-content: center; font-size: 28px; flex-shrink: 0; }
+.item-body { flex: 1; min-width: 0; }
+.item-name { font-size: 14px; font-weight: 500; }
+.item-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+.item-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+.item-price { font-size: 14px; font-weight: 500; color: var(--amber); }
+.badge-pop { font-size: 10px; padding: 2px 6px; border-radius: 10px; background: #fce8e8; color: var(--red); font-weight: 500; }
+.badge-new { font-size: 10px; padding: 2px 6px; border-radius: 10px; background: var(--green-light); color: var(--green); font-weight: 500; }
+.qty-ctrl { display: flex; align-items: center; gap: 8px; }
+.qty-btn { width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--border); background: none; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; color: var(--text); transition: background 0.1s; }
+.qty-btn:hover { background: var(--cream); }
+.qty-btn.add-first { background: var(--dark); color: var(--gold-light); border-color: var(--dark); font-size: 18px; width: 28px; height: 28px; }
+.qty-num { font-size: 14px; font-weight: 500; min-width: 18px; text-align: center; }
+.cart-bar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; padding: 12px 14px; background: var(--surface); border-top: 1px solid var(--border); z-index: 50; }
+.cart-btn-main { width: 100%; padding: 15px; background: var(--dark); color: var(--gold-light); border: none; border-radius: var(--radius); font-size: 15px; font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: opacity 0.15s; }
+.cart-btn-main:disabled { opacity: 0.4; cursor: default; }
+.cart-pill { background: var(--gold); color: var(--dark); border-radius: 20px; padding: 2px 10px; font-size: 13px; font-weight: 500; }
+
+/* Cart panel */
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 60; }
+.overlay.open { display: block; }
+.cart-panel { display: none; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 430px; background: var(--surface); border-radius: 20px 20px 0 0; z-index: 70; padding: 20px 16px; max-height: 75vh; overflow-y: auto; }
+.cart-panel.open { display: block; }
+.panel-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 20px; }
+.cart-item-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.cart-item-left { font-size: 14px; }
+.cart-item-sub { font-size: 12px; color: var(--text-muted); }
+.cart-total-row { display: flex; justify-content: space-between; padding: 14px 0 4px; font-weight: 500; font-size: 15px; }
+.order-btn { width: 100%; margin-top: 12px; padding: 15px; background: var(--gold); color: var(--dark); border: none; border-radius: var(--radius); font-size: 15px; font-weight: 500; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background 0.15s; }
+.order-btn:hover { background: var(--gold-light); }
+
+/* Success */
+.success-overlay { display: none; position: fixed; inset: 0; background: var(--dark); z-index: 100; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 16px; padding: 32px; }
+.success-overlay.show { display: flex; }
+.success-icon { width: 72px; height: 72px; border-radius: 50%; background: rgba(45,90,39,0.2); border: 2px solid var(--green); display: flex; align-items: center; justify-content: center; font-size: 36px; animation: popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275); }
+@keyframes popIn { from{transform:scale(0)}to{transform:scale(1)} }
+.success-title { font-size: 22px; color: var(--gold-light); }
+.success-sub { font-size: 14px; color: rgba(247,242,232,0.6); line-height: 1.6; }
+.success-reset { margin-top: 8px; padding: 12px 28px; background: rgba(196,154,60,0.15); color: var(--gold-light); border: 1px solid rgba(196,154,60,0.4); border-radius: var(--radius); font-size: 14px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+
+/* ══════════════════════════════
+   VIEW 2 — CUISINE
+   ══════════════════════════════ */
+.kitchen { background: #0d1117; min-height: calc(100vh - 49px); color: #e6e6e6; }
+.kitchen-top { background: #161b22; border-bottom: 1px solid rgba(255,255,255,0.08); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: gap; gap: 10px; }
+.k-brand { font-family: 'Playfair Display', serif; font-size: 15px; color: #c49a3c; }
+.k-clock { font-size: 13px; color: rgba(255,255,255,0.4); font-variant-numeric: tabular-nums; }
+.k-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 16px 20px; }
+.k-stat { background: #161b22; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius-sm); padding: 12px 14px; }
+.k-stat-label { font-size: 11px; color: rgba(255,255,255,0.4); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+.k-stat-val { font-size: 24px; font-weight: 500; color: #e6e6e6; }
+.k-filters { display: flex; gap: 6px; padding: 0 20px 12px; flex-wrap: wrap; }
+.k-filter { padding: 5px 13px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.15); font-size: 12px; cursor: pointer; background: none; color: rgba(255,255,255,0.5); font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+.k-filter.active { background: var(--gold); color: var(--dark); border-color: var(--gold); }
+.k-cols { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 14px; padding: 0 20px 20px; }
+.k-col-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.k-col-title { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: rgba(255,255,255,0.5); }
+.k-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+.kb-new { background: rgba(146,88,10,0.3); color: #f5c842; }
+.kb-wip { background: rgba(26,58,92,0.4); color: #7ab3e8; }
+.kb-ready { background: rgba(45,90,39,0.3); color: #7cc876; }
+.k-cards { display: flex; flex-direction: column; gap: 8px; min-height: 100px; }
+.k-card { background: #161b22; border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius); padding: 14px; transition: border-color 0.2s; }
+.k-card.urgent { border-left: 3px solid #e24b4a; border-radius: 0 var(--radius) var(--radius) 0; }
+.k-card.new-anim { animation: slideIn 0.3s ease; }
+@keyframes slideIn { from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)} }
+.k-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.k-table { font-size: 14px; font-weight: 500; color: #e6e6e6; }
+.k-timer { font-size: 12px; color: rgba(255,255,255,0.4); font-variant-numeric: tabular-nums; }
+.k-timer.late { color: #e24b4a; }
+.k-items { display: flex; flex-direction: column; gap: 4px; }
+.k-item-line { font-size: 13px; color: rgba(255,255,255,0.7); display: flex; gap: 8px; }
+.k-item-qty { color: var(--gold); font-weight: 500; min-width: 20px; }
+.k-actions { display: flex; gap: 6px; margin-top: 12px; }
+.k-btn { flex: 1; padding: 7px; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.15); font-size: 12px; font-weight: 500; cursor: pointer; background: none; color: rgba(255,255,255,0.7); font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+.k-btn:hover { background: rgba(255,255,255,0.05); }
+.k-btn-start { background: rgba(146,88,10,0.2); color: #f5c842; border-color: rgba(146,88,10,0.4); }
+.k-btn-start:hover { background: rgba(146,88,10,0.35); }
+.k-btn-ready { background: rgba(45,90,39,0.2); color: #7cc876; border-color: rgba(45,90,39,0.4); }
+.k-btn-ready:hover { background: rgba(45,90,39,0.35); }
+.k-btn-done { background: rgba(26,58,92,0.25); color: #7ab3e8; border-color: rgba(26,58,92,0.4); }
+.k-btn-done:hover { background: rgba(26,58,92,0.4); }
+.k-empty { font-size: 13px; color: rgba(255,255,255,0.2); text-align: center; padding: 24px 0; border: 1px dashed rgba(255,255,255,0.08); border-radius: var(--radius); }
+.notif-toast { display: none; position: fixed; top: 60px; right: 20px; background: #161b22; border: 1px solid rgba(196,154,60,0.5); border-radius: var(--radius); padding: 12px 16px; font-size: 13px; color: var(--gold-light); z-index: 200; animation: toastIn 0.3s ease; max-width: 260px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+@keyframes toastIn { from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)} }
+
+/* ══════════════════════════════
+   VIEW 3 — ADMIN
+   ══════════════════════════════ */
+.admin { background: var(--cream); min-height: calc(100vh - 49px); }
+.admin-top { background: var(--dark); padding: 20px; border-bottom: 1px solid rgba(196,154,60,0.2); }
+.admin-top h2 { font-size: 20px; color: var(--gold-light); margin-bottom: 4px; }
+.admin-top p { font-size: 13px; color: rgba(247,242,232,0.5); }
+.admin-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 20px; }
+.admin-tab { padding: 13px 18px; font-size: 13px; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; background: none; border-top: none; border-left: none; border-right: none; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+.admin-tab.active { color: var(--amber); border-bottom-color: var(--amber); font-weight: 500; }
+.admin-section { display: none; padding: 20px; }
+.admin-section.active { display: block; }
+
+/* QR section */
+.qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; margin-top: 16px; }
+.qr-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; }
+.qr-card canvas, .qr-card img { max-width: 100%; }
+.qr-table-name { font-size: 13px; font-weight: 500; margin-top: 10px; color: var(--text); }
+.qr-url { font-size: 10px; color: var(--text-muted); margin-top: 2px; word-break: break-all; }
+.qr-dl-btn { margin-top: 10px; width: 100%; padding: 7px; border: 1px solid var(--border); background: none; border-radius: var(--radius-sm); font-size: 12px; cursor: pointer; font-family: 'DM Sans', sans-serif; color: var(--text-muted); transition: all 0.15s; }
+.qr-dl-btn:hover { background: var(--cream); color: var(--text); }
+
+/* Stats section */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.s-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.s-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 6px; }
+.s-val { font-size: 28px; font-weight: 500; color: var(--text); }
+.s-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.chart-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+.chart-title { font-size: 14px; font-weight: 500; margin-bottom: 16px; color: var(--text); }
+.bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 140px; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+.bar { width: 100%; border-radius: 4px 4px 0 0; min-height: 4px; transition: height 0.5s ease; }
+.bar-label { font-size: 11px; color: var(--text-muted); text-align: center; }
+.bar-val { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+.history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.history-table th { text-align: left; padding: 8px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); border-bottom: 1px solid var(--border); font-weight: 500; }
+.history-table td { padding: 10px 12px; border-bottom: 1px solid rgba(0,0,0,0.05); color: var(--text); }
+.history-table tr:last-child td { border-bottom: none; }
+.status-pill { font-size: 11px; padding: 3px 8px; border-radius: 10px; font-weight: 500; }
+.sp-done { background: var(--green-light); color: var(--green); }
+.sp-cancelled { background: var(--red-light); color: var(--red); }
+.section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.section-head h3 { font-size: 16px; }
+.clear-btn { font-size: 12px; padding: 6px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: none; cursor: pointer; color: var(--text-muted); font-family: 'DM Sans', sans-serif; }
+.clear-btn:hover { background: var(--cream-dark); }
+
+@media (max-width: 600px) {
+  .k-cols { grid-template-columns: 1fr; }
+  .k-stats { grid-template-columns: repeat(2,1fr); }
+  .qr-grid { grid-template-columns: repeat(2,1fr); }
+}
+
+/* ── PASSWORD MODAL ── */
+.pw-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:300; align-items:center; justify-content:center; padding:20px; }
+.pw-box { background:var(--surface); border-radius:16px; padding:28px 24px; width:100%; max-width:360px; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+.pw-icon { width:52px; height:52px; border-radius:50%; background:#faeeda; display:flex; align-items:center; justify-content:center; font-size:24px; margin:0 auto 16px; }
+.pw-title { font-size:17px; font-weight:500; text-align:center; margin-bottom:6px; color:var(--text); }
+.pw-sub { font-size:13px; color:var(--text-muted); text-align:center; margin-bottom:20px; }
+.pw-input { width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:14px; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--cream); outline:none; transition:border-color 0.15s; letter-spacing:0.05em; }
+.pw-input:focus { border-color:var(--gold); }
+.pw-error { font-size:12px; color:var(--red); margin-top:8px; display:none; text-align:center; }
+.pw-actions { display:flex; gap:8px; margin-top:16px; }
+.pw-cancel { flex:1; padding:11px; border:1px solid var(--border); background:none; border-radius:var(--radius-sm); font-size:14px; cursor:pointer; font-family:'DM Sans',sans-serif; color:var(--text-muted); }
+.pw-cancel:hover { background:var(--cream); }
+.pw-confirm { flex:2; padding:11px; background:var(--dark); color:var(--gold-light); border:none; border-radius:var(--radius-sm); font-size:14px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:opacity 0.15s; }
+.pw-confirm:hover { opacity:0.85; }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">🍽 Bistrot de Hasnon</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showView('menu',this)">📱 Menu client</button>
+    <button class="nav-tab" onclick="showView('kitchen',this)">👨‍🍳 Cuisine <span class="live-badge"><span class="live-dot"></span>Live</span></button>
+    <button class="nav-tab" onclick="showView('admin',this)">⚙️ Admin</button>
+  </div>
+</nav>
+
+<!-- ════════ VIEW: MENU CLIENT ════════ -->
+<div id="view-menu" class="view active">
+<div class="menu-shell">
+  <div class="menu-hero">
+    <h1 class="restaurant-name">Le Bistrot de Hasnon</h1>
+    <div class="table-info">
+      <div class="table-select-wrap">
+        <select id="tableSelect" onchange="updateTable()">
+          <script>for(let i=1;i<=50;i++) document.write(`<option value="${i}"${i===7?' selected':''}>Table ${i}</option>`)</script>
+        </select>
+      </div>
+      <span style="font-size:13px;color:rgba(247,242,232,0.5)">— Déjeuner</span>
+    </div>
+  </div>
+  <div class="menu-cats">
+    <button class="cat-tab active" onclick="menuFilter('tous',this)">Tout</button>
+    <button class="cat-tab" onclick="menuFilter('entrees',this)">Entrées</button>
+    <button class="cat-tab" onclick="menuFilter('plats',this)">Plats</button>
+    <button class="cat-tab" onclick="menuFilter('desserts',this)">Desserts</button>
+    <button class="cat-tab" onclick="menuFilter('boissons',this)">Boissons</button>
+  </div>
+  <div class="menu-items" id="menuItems"></div>
+  <div class="cart-bar">
+    <button class="cart-btn-main" id="cartMainBtn" onclick="openCartPanel()" disabled>
+      <span id="cartMainLabel">Votre panier est vide</span>
+      <span class="cart-pill" id="cartMainPill" style="display:none">0</span>
+    </button>
+  </div>
+</div>
+<div class="overlay" id="menuOverlay" onclick="closeCartPanel()"></div>
+<div class="cart-panel" id="cartPanel">
+  <div class="panel-handle"></div>
+  <h3 style="font-size:17px;margin-bottom:14px">Votre commande</h3>
+  <div id="cartPanelItems"></div>
+  <div class="cart-total-row"><span>Total</span><span id="cartPanelTotal">0,00 €</span></div>
+  <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px">Commentaire (optionnel)</div>
+  <textarea id="orderNote" placeholder="Allergies, cuisson, demandes spéciales…" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;resize:none;height:64px;color:var(--text);background:var(--cream);"></textarea>
+  <button class="order-btn" onclick="submitOrder()">Envoyer la commande →</button>
+</div>
+<div class="success-overlay" id="successOverlay">
+  <div class="success-icon">✓</div>
+  <h2 class="success-title">Commande envoyée !</h2>
+  <p class="success-sub">Votre commande a été transmise en cuisine.<br>Temps estimé : <strong style="color:var(--gold-light)">20–25 min</strong></p>
+  <button class="success-reset" onclick="resetMenu()">Commander autre chose</button>
+</div>
+</div>
+
+<!-- ════════ VIEW: CUISINE ════════ -->
+<div id="view-kitchen" class="view">
+<div class="kitchen">
+  <div class="kitchen-top">
+    <div>
+      <div class="k-brand">Tableau de bord — Cuisine</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:14px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="live-dot" style="width:8px;height:8px;background:#7cc876"></span>
+        <span style="font-size:12px;color:rgba(255,255,255,0.4)">Temps réel</span>
+      </div>
+      <div class="k-clock" id="kitchenClock"></div>
+    </div>
+  </div>
+  <div class="k-stats">
+    <div class="k-stat"><div class="k-stat-label">Actives</div><div class="k-stat-val" id="ks-active">0</div></div>
+    <div class="k-stat"><div class="k-stat-label">Tables</div><div class="k-stat-val" id="ks-tables">0</div></div>
+    <div class="k-stat"><div class="k-stat-label">Temps moy.</div><div class="k-stat-val" id="ks-time">—</div></div>
+    <div class="k-stat"><div class="k-stat-label">Servies</div><div class="k-stat-val" id="ks-done">0</div></div>
+  </div>
+  <div class="k-filters">
+    <button class="k-filter active" onclick="kFilter('all',this)">Toutes</button>
+    <button class="k-filter" onclick="kFilter('urgent',this)">⚠ Urgentes</button>
+    <button class="k-filter" onclick="kFilter('entrees',this)">Entrées</button>
+    <button class="k-filter" onclick="kFilter('plats',this)">Plats</button>
+    <button class="k-filter" onclick="kFilter('desserts',this)">Desserts</button>
+  </div>
+  <div class="k-cols">
+    <div>
+      <div class="k-col-head"><span class="k-col-title">Nouvelles</span><span class="k-badge kb-new" id="kc-new">0</span></div>
+      <div class="k-cards" id="k-col-new"></div>
+    </div>
+    <div>
+      <div class="k-col-head"><span class="k-col-title">En préparation</span><span class="k-badge kb-wip" id="kc-wip">0</span></div>
+      <div class="k-cards" id="k-col-wip"></div>
+    </div>
+    <div>
+      <div class="k-col-head"><span class="k-col-title">Prêtes à servir</span><span class="k-badge kb-ready" id="kc-ready">0</span></div>
+      <div class="k-cards" id="k-col-ready"></div>
+    </div>
+  </div>
+</div>
+<div class="notif-toast" id="notifToast"></div>
+</div>
+
+<!-- ════════ VIEW: ADMIN ════════ -->
+<div id="view-admin" class="view">
+<div class="admin">
+  <div class="admin-top">
+    <h2>Administration</h2>
+    <p>Gestion des QR codes, statistiques et historique des commandes</p>
+  </div>
+  <div class="admin-tabs">
+    <button class="admin-tab active" onclick="adminTab('qr',this)">QR Codes par table</button>
+    <button class="admin-tab" onclick="adminTab('stats',this)">Statistiques</button>
+    <button class="admin-tab" onclick="adminTab('history',this)">Historique</button>
+  </div>
+
+  <!-- QR -->
+  <div class="admin-section active" id="admin-qr">
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:4px">Chaque QR code pointe vers l'URL du menu pré-rempli avec le numéro de table. Imprimez-les et placez-les sur les tables.</p>
+    <div class="qr-grid" id="qrGrid"></div>
+  </div>
+
+  <!-- STATS -->
+  <div class="admin-section" id="admin-stats">
+    <div class="stats-grid" id="statsCards"></div>
+    <div class="chart-wrap">
+      <div class="chart-title">Commandes par heure (service du jour)</div>
+      <div class="bar-chart" id="hourChart"></div>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-title">Plats les plus commandés</div>
+      <div id="topDishes"></div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="admin-section" id="admin-history">
+    <div class="section-head">
+      <h3>Historique des commandes</h3>
+      <button class="clear-btn" onclick="clearHistory()">Effacer l'historique</button>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">
+      <table class="history-table" id="historyTable">
+        <thead><tr><th>#</th><th>Table</th><th>Heure</th><th>Articles</th><th>Total</th><th>Statut</th></tr></thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ══ DATA ══
+const MENU = [
+  {id:1,cat:'entrees',emoji:'🥗',name:'Salade de chèvre chaud',desc:'Miel de lavande, noix, mesclun',price:9.5,badge:'pop'},
+  {id:2,cat:'entrees',emoji:'🍲',name:'Velouté de saison',desc:'Crème fraîche, croûtons maison',price:7.5,badge:''},
+  {id:3,cat:'entrees',emoji:'🥩',name:'Carpaccio de bœuf',desc:'Câpres, parmesan, roquette',price:12,badge:'new'},
+  {id:4,cat:'plats',emoji:'🐟',name:'Filet de bar en croûte',desc:'Risotto citron, sauce vierge',price:19.5,badge:'pop'},
+  {id:5,cat:'plats',emoji:'🍗',name:'Suprême de volaille',desc:'Champignons forestiers, purée truffée',price:17,badge:''},
+  {id:6,cat:'plats',emoji:'🥦',name:'Tarte fine végétarienne',desc:'Légumes rôtis, chèvre, basilic',price:14.5,badge:'new'},
+  {id:7,cat:'plats',emoji:'🥩',name:'Entrecôte grillée',desc:'Frites maison, sauce au poivre',price:22,badge:''},
+  {id:8,cat:'desserts',emoji:'🍮',name:'Crème brûlée maison',desc:'Vanille Bourbon, caramel croquant',price:7,badge:'pop'},
+  {id:9,cat:'desserts',emoji:'🍫',name:'Mi-cuit au chocolat',desc:'Glace vanille, coulis framboise',price:8,badge:''},
+  {id:10,cat:'boissons',emoji:'🍷',name:'Vin rouge maison (25cl)',desc:'Côtes du Rhône',price:5.5,badge:''},
+  {id:11,cat:'boissons',emoji:'🫧',name:'Eau pétillante (75cl)',desc:'San Pellegrino',price:4,badge:''},
+  {id:12,cat:'boissons',emoji:'☕',name:'Café expresso',desc:'Torréfaction artisanale',price:2.5,badge:''},
+];
+
+// ══ STATE ══
+let cart = {};
+let menuCat = 'tous';
+let currentTable = 7;
+let orders = [];
+let history = [];
+let kActiveFilter = 'all';
+let doneCount = 0;
+let orderIdSeq = 1;
+// ══ FIREBASE REALTIME ══
+let fbConnected = false;
+
+function fbRef(path) {
+  return window._fb.ref(window._fb.db, path);
+}
+
+// Listen to active orders in real time
+function listenOrders() {
+  window._fb.onValue(fbRef('orders'), snap => {
+    const data = snap.val() || {};
+    const fresh = Object.entries(data).map(([fbKey, o]) => ({...o, fbKey}));
+    // Detect new orders for sound/toast
+    fresh.forEach(o => {
+      if (o.status === 'new' && !window._knownOrderIds.has(o.id)) {
+        if (window._knownOrderIds.size > 0) { // avoid firing on first load
+          playSound('new');
+          showToast(`🔔 Nouvelle commande — Table ${o.table} (${o.items.length} article${o.items.length>1?'s':''})`);
+        }
+        window._knownOrderIds.add(o.id);
+      }
+    });
+    orders = fresh;
+    renderKitchen();
+    updateCartBar();
+  });
+}
+
+// Listen to history in real time
+function listenHistory() {
+  window._fb.onValue(fbRef('history'), snap => {
+    const data = snap.val() || {};
+    history = Object.values(data).sort((a,b) => b.createdAt - a.createdAt);
+    doneCount = history.length;
+  });
+}
+
+window._knownOrderIds = new Set();
+
+// ══ SOUND ══
+function playSound(type) {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (type === 'new') {
+      // Ding joyeux
+      [523,659,784].forEach((f,i) => {
+        const o = ctx.createOscillator(), g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.value = f; o.type = 'sine';
+        g.gain.setValueAtTime(0, ctx.currentTime + i*0.12);
+        g.gain.linearRampToValueAtTime(0.3, ctx.currentTime + i*0.12 + 0.05);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i*0.12 + 0.4);
+        o.start(ctx.currentTime + i*0.12);
+        o.stop(ctx.currentTime + i*0.12 + 0.4);
+      });
+    } else if (type === 'ready') {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = 880; o.type = 'sine';
+      g.gain.setValueAtTime(0.3, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+      o.start(); o.stop(ctx.currentTime + 0.5);
+    }
+  } catch(e) {}
+}
+
+// ══ NAV ══
+const PASSWORDS = { kitchen: 'CuisineHasnon', admin: 'AdminHasnon' };
+const unlocked = { kitchen: false, admin: false };
+
+function showView(v, btn) {
+  if ((v==='kitchen'||v==='admin') && !unlocked[v]) {
+    askPassword(v, btn); return;
+  }
+  _activateView(v, btn);
+}
+
+function _activateView(v, btn) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  btn.classList.add('active');
+  if(v==='admin') { renderQR(); renderStats(); renderHistory(); }
+}
+
+function askPassword(v, btn) {
+  const labels = { kitchen: '👨‍🍳 Accès Cuisine', admin: '⚙️ Accès Administration' };
+  document.getElementById('pwModal-title').textContent = labels[v];
+  document.getElementById('pwModal-input').value = '';
+  document.getElementById('pwModal-error').style.display = 'none';
+  document.getElementById('pwModal').style.display = 'flex';
+  setTimeout(()=>document.getElementById('pwModal-input').focus(), 50);
+  document.getElementById('pwModal').dataset.target = v;
+  window._pwBtn = btn;
+}
+
+function pwSubmit() {
+  const v = document.getElementById('pwModal').dataset.target;
+  const val = document.getElementById('pwModal-input').value;
+  if (val === PASSWORDS[v]) {
+    unlocked[v] = true;
+    pwClose();
+    _activateView(v, window._pwBtn);
+  } else {
+    const err = document.getElementById('pwModal-error');
+    err.textContent = 'Mot de passe incorrect. Réessayez.';
+    err.style.display = 'block';
+    document.getElementById('pwModal-input').value = '';
+    document.getElementById('pwModal-input').focus();
+  }
+}
+
+function pwClose() {
+  document.getElementById('pwModal').style.display = 'none';
+}
+
+// ══ MENU CLIENT ══
+function updateTable() {
+  currentTable = parseInt(document.getElementById('tableSelect').value);
+}
+function menuFilter(cat, btn) {
+  menuCat = cat;
+  document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMenu();
+}
+function renderMenu() {
+  const list = document.getElementById('menuItems');
+  const items = menuCat === 'tous' ? MENU : MENU.filter(i => i.cat === menuCat);
+  const labels = {tous:'Tous les plats',entrees:'Entrées',plats:'Plats',desserts:'Desserts',boissons:'Boissons'};
+  let html = `<div class="menu-section-label">${labels[menuCat]}</div>`;
+  items.forEach(item => {
+    const q = cart[item.id] || 0;
+    const badge = item.badge==='pop' ? '<span class="badge-pop">Populaire</span>' : item.badge==='new' ? '<span class="badge-new">Nouveau</span>' : '';
+    const qCtrl = q===0
+      ? `<button class="qty-btn add-first" onclick="event.stopPropagation();addItem(${item.id})">+</button>`
+      : `<div class="qty-ctrl">
+          <button class="qty-btn" onclick="event.stopPropagation();removeItem(${item.id})">−</button>
+          <span class="qty-num">${q}</span>
+          <button class="qty-btn" onclick="event.stopPropagation();addItem(${item.id})">+</button>
+         </div>`;
+    html += `<div class="menu-item" onclick="addItem(${item.id})">
+      <div class="item-img">${item.emoji}</div>
+      <div class="item-body">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span class="item-name">${item.name}</span>${badge}
+        </div>
+        <div class="item-desc">${item.desc}</div>
+        <div class="item-foot">
+          <span class="item-price">${item.price.toFixed(2).replace('.',',')} €</span>
+          ${qCtrl}
+        </div>
+      </div>
+    </div>`;
+  });
+  list.innerHTML = html;
+  updateCartBar();
+}
+function addItem(id) {
+  cart[id] = (cart[id]||0)+1;
+  renderMenu();
+}
+function removeItem(id) {
+  if(!cart[id]) return;
+  cart[id]--;
+  if(cart[id]<=0) delete cart[id];
+  renderMenu();
+}
+function updateCartBar() {
+  const total = Object.entries(cart).reduce((s,[id,q])=>{const it=MENU.find(i=>i.id==id);return s+(it?it.price*q:0);},0);
+  const count = Object.values(cart).reduce((s,q)=>s+q,0);
+  const btn = document.getElementById('cartMainBtn');
+  const pill = document.getElementById('cartMainPill');
+  const label = document.getElementById('cartMainLabel');
+  if(count===0){ btn.disabled=true; pill.style.display='none'; label.textContent='Votre panier est vide'; }
+  else { btn.disabled=false; pill.style.display='inline'; pill.textContent=count; label.textContent=`Voir ma commande — ${total.toFixed(2).replace('.',',')} €`; }
+}
+function openCartPanel() {
+  document.getElementById('cartPanel').classList.add('open');
+  document.getElementById('menuOverlay').classList.add('open');
+  renderCartPanel();
+}
+function closeCartPanel() {
+  document.getElementById('cartPanel').classList.remove('open');
+  document.getElementById('menuOverlay').classList.remove('open');
+}
+function renderCartPanel() {
+  let total=0;
+  let html='';
+  Object.entries(cart).filter(([,q])=>q>0).forEach(([id,q])=>{
+    const it=MENU.find(i=>i.id==id); if(!it) return;
+    const sub=it.price*q; total+=sub;
+    html+=`<div class="cart-item-row">
+      <div><div class="cart-item-left">${it.emoji} ${it.name}</div><div class="cart-item-sub">${it.price.toFixed(2).replace('.',',')} € × ${q}</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="qty-ctrl">
+          <button class="qty-btn" onclick="cpQty(${id},-1)">−</button>
+          <span class="qty-num">${q}</span>
+          <button class="qty-btn" onclick="cpQty(${id},1)">+</button>
+        </div>
+        <span style="font-size:14px;font-weight:500;min-width:52px;text-align:right">${sub.toFixed(2).replace('.',',')} €</span>
+      </div>
+    </div>`;
+  });
+  document.getElementById('cartPanelItems').innerHTML = html || '<p style="font-size:13px;color:var(--text-muted);text-align:center;padding:16px 0">Panier vide</p>';
+  document.getElementById('cartPanelTotal').textContent = total.toFixed(2).replace('.',',') + ' €';
+}
+function cpQty(id,delta) {
+  cart[id]=(cart[id]||0)+delta;
+  if(cart[id]<=0) delete cart[id];
+  renderCartPanel(); updateCartBar(); renderMenu();
+}
+function submitOrder() {
+  const items = Object.entries(cart).filter(([,q])=>q>0).map(([id,q])=>{
+    const it=MENU.find(i=>i.id==id);
+    return {id:parseInt(id),name:it.name,emoji:it.emoji,cat:it.cat,qty:q,price:it.price};
+  });
+  if(!items.length) return;
+  const note = document.getElementById('orderNote').value;
+  const total = items.reduce((s,i)=>s+i.price*i.qty,0);
+  const order = {
+    id: orderIdSeq++,
+    table: currentTable,
+    items,
+    note,
+    total,
+    status: 'new',
+    createdAt: Date.now(),
+    elapsed: 0,
+  };
+  // Push to Firebase
+  const newRef = window._fb.push(fbRef('orders'));
+  order.fbKey = newRef.key;
+  window._fb.set(newRef, order);
+  closeCartPanel();
+  cart = {};
+  document.getElementById('orderNote').value='';
+  document.getElementById('successOverlay').classList.add('show');
+}
+function resetMenu() {
+  document.getElementById('successOverlay').classList.remove('show');
+  renderMenu();
+}
+
+// ══ CUISINE ══
+function fmtTime(s) {
+  const m=Math.floor(s/60), sec=s%60;
+  return m+'\''+String(sec).padStart(2,'0');
+}
+function isUrgent(o) {
+  return (o.status==='new'&&o.elapsed>180)||(o.status==='wip'&&o.elapsed>1200);
+}
+function matchKFilter(o) {
+  if(kActiveFilter==='all') return true;
+  if(kActiveFilter==='urgent') return isUrgent(o);
+  return o.items.some(i=>i.cat===kActiveFilter);
+}
+function renderKCard(o) {
+  const urgent=isUrgent(o);
+  const items=o.items.map(i=>`<div class="k-item-line"><span class="k-item-qty">×${i.qty}</span><span>${i.emoji} ${i.name}</span></div>`).join('');
+  let actions='';
+  if(o.status==='new') actions=`<button class="k-btn k-btn-start" onclick="kAdvance(${o.id})">▶ Commencer</button>`;
+  else if(o.status==='wip') actions=`<button class="k-btn k-btn-ready" onclick="kAdvance(${o.id})">✓ Prêt à servir</button>`;
+  else actions=`<button class="k-btn k-btn-done" onclick="kComplete(${o.id})">✓ Servi</button>`;
+  const noteHtml=o.note?`<div style="font-size:11px;color:rgba(255,255,255,0.35);margin-top:6px;padding:6px;background:rgba(255,255,255,0.04);border-radius:4px">📝 ${o.note}</div>`:'';
+  return `<div class="k-card${urgent?' urgent':''}" id="kcard-${o.id}">
+    <div class="k-card-top">
+      <span class="k-table">🪑 Table ${o.table}</span>
+      <span class="k-timer${urgent?' late':''}">${fmtTime(o.elapsed)}</span>
+    </div>
+    <div class="k-items">${items}</div>
+    ${noteHtml}
+    <div class="k-actions">${actions}</div>
+  </div>`;
+}
+function renderKitchen() {
+  const cols={new:[], wip:[], ready:[]};
+  orders.forEach(o=>{ if(cols[o.status]&&matchKFilter(o)) cols[o.status].push(o); });
+  ['new','wip','ready'].forEach(s=>{
+    const el=document.getElementById('k-col-'+s);
+    if(!el) return;
+    el.innerHTML=cols[s].length ? cols[s].map(renderKCard).join('') : `<div class="k-empty">Aucune commande</div>`;
+  });
+  document.getElementById('kc-new').textContent=orders.filter(o=>o.status==='new').length;
+  document.getElementById('kc-wip').textContent=orders.filter(o=>o.status==='wip').length;
+  document.getElementById('kc-ready').textContent=orders.filter(o=>o.status==='ready').length;
+  const el1=document.getElementById('ks-active');
+  const el2=document.getElementById('ks-tables');
+  const el3=document.getElementById('ks-time');
+  const el4=document.getElementById('ks-done');
+  if(el1) el1.textContent=orders.length;
+  if(el2) el2.textContent=[...new Set(orders.map(o=>o.table))].length;
+  if(el3) {
+    const allElapsed=orders.filter(o=>o.status==='wip').map(o=>o.elapsed);
+    el3.textContent=allElapsed.length ? Math.round(allElapsed.reduce((a,b)=>a+b,0)/allElapsed.length/60)+'\'': '—';
+  }
+  if(el4) el4.textContent=doneCount;
+}
+function kAdvance(id) {
+  const o=orders.find(x=>x.id===id); if(!o) return;
+  const newStatus = o.status==='new' ? 'wip' : 'ready';
+  playSound('ready');
+  window._fb.update(fbRef('orders/'+o.fbKey), {status: newStatus, elapsed: 0});
+}
+function kComplete(id) {
+  const o=orders.find(x=>x.id===id); if(!o) return;
+  const completed = {...o, status:'done', completedAt: Date.now()};
+  delete completed.fbKey;
+  // Move to history
+  window._fb.push(fbRef('history'), completed);
+  // Remove from active orders
+  window._fb.remove(fbRef('orders/'+o.fbKey));
+}
+function kFilter(f,btn) {
+  kActiveFilter=f;
+  document.querySelectorAll('.k-filter').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderKitchen();
+}
+function showToast(msg) {
+  const t=document.getElementById('notifToast');
+  if(!t) return;
+  t.textContent=msg; t.style.display='block';
+  setTimeout(()=>{ t.style.display='none'; },3500);
+}
+
+// polling: détecte nouvelles commandes
+// pollOrders remplacé par Firebase onValue listener
+
+// ── Kitchen clock & tick ──
+function kitchenTick() {
+  const now=new Date();
+  const cl=document.getElementById('kitchenClock');
+  if(cl) cl.textContent=now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  // Increment elapsed locally + sync to Firebase every 10s
+  orders.forEach(o=>{ if(o.status!=='done') o.elapsed=(o.elapsed||0)+1; });
+  window._tickCount = (window._tickCount||0)+1;
+  if(window._tickCount % 10 === 0) {
+    orders.forEach(o=>{
+      if(o.fbKey && o.status!=='done') {
+        window._fb.update(fbRef('orders/'+o.fbKey), {elapsed: o.elapsed});
+      }
+    });
+  }
+  renderKitchen();
+}
+
+// ══ ADMIN ══
+function adminTab(t,btn) {
+  document.querySelectorAll('.admin-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.admin-section').forEach(s=>s.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('admin-'+t).classList.add('active');
+  if(t==='qr') renderQR();
+  if(t==='stats') renderStats();
+  if(t==='history') renderHistory();
+}
+
+function renderQR() {
+  const grid=document.getElementById('qrGrid'); if(!grid) return;
+  grid.innerHTML='';
+  const baseUrl=window.location.href.split('?')[0];
+  for(let t=1;t<=50;t++) {
+    const url=`${baseUrl}?table=${t}`;
+    const card=document.createElement('div');
+    card.className='qr-card';
+    const qDiv=document.createElement('div');
+    qDiv.id=`qr-${t}`;
+    card.innerHTML=`<div id="qr-${t}"></div><div class="qr-table-name">Table ${t}</div><div class="qr-url">${url}</div><button class="qr-dl-btn" onclick="dlQR(${t})">⬇ Télécharger</button>`;
+    grid.appendChild(card);
+    try {
+      new QRCode(card.querySelector(`#qr-${t}`), {text:url, width:120, height:120, colorDark:'#0f0b05', colorLight:'#ffffff'});
+    } catch(e) {}
+  }
+}
+
+function dlQR(t) {
+  const el=document.getElementById('qr-'+t);
+  if(!el) return;
+  const canvas=el.querySelector('canvas');
+  if(!canvas) return;
+  const a=document.createElement('a');
+  a.download=`table-${t}-qrcode.png`;
+  a.href=canvas.toDataURL();
+  a.click();
+}
+
+function renderStats() {
+  const total=history.reduce((s,o)=>s+o.total,0);
+  const avgTime=history.length ? Math.round(history.filter(o=>o.completedAt).reduce((s,o)=>s+(o.completedAt-o.createdAt)/60000,0)/history.length) : 0;
+  const allItems=history.flatMap(o=>o.items);
+  const dishCount={};
+  allItems.forEach(i=>{ dishCount[i.name]=(dishCount[i.name]||0)+i.qty; });
+
+  const sc=document.getElementById('statsCards');
+  if(sc) sc.innerHTML=`
+    <div class="s-card"><div class="s-label">Commandes totales</div><div class="s-val">${history.length+doneCount}</div><div class="s-sub">depuis l'ouverture</div></div>
+    <div class="s-card"><div class="s-label">Chiffre d'affaires</div><div class="s-val">${total.toFixed(0)} €</div><div class="s-sub">service du jour</div></div>
+    <div class="s-card"><div class="s-label">Panier moyen</div><div class="s-val">${history.length?( total/history.length).toFixed(2):0} €</div><div class="s-sub">par commande</div></div>
+    <div class="s-card"><div class="s-label">Temps moyen</div><div class="s-val">${avgTime||'—'} min</div><div class="s-sub">de préparation</div></div>
+  `;
+
+  // Bar chart par heure
+  const hc=document.getElementById('hourChart');
+  if(hc) {
+    const byHour={};
+    for(let h=11;h<=22;h++) byHour[h]=0;
+    history.forEach(o=>{ const h=new Date(o.createdAt).getHours(); if(byHour[h]!==undefined) byHour[h]++; });
+    const maxV=Math.max(...Object.values(byHour),1);
+    hc.innerHTML=Object.entries(byHour).map(([h,v])=>`
+      <div class="bar-col">
+        <div class="bar-val">${v||''}</div>
+        <div class="bar" style="height:${Math.round((v/maxV)*110)+4}px;background:${v>0?'#c49a3c':'#e8e0d0'}"></div>
+        <div class="bar-label">${h}h</div>
+      </div>`).join('');
+  }
+
+  // Top dishes
+  const td=document.getElementById('topDishes');
+  if(td) {
+    const sorted=Object.entries(dishCount).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    const max=sorted[0]?sorted[0][1]:1;
+    td.innerHTML=sorted.length ? sorted.map(([name,count])=>`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span style="font-size:13px;min-width:160px;color:var(--text)">${name}</span>
+        <div style="flex:1;background:#f0ebe0;border-radius:4px;height:10px;overflow:hidden">
+          <div style="width:${Math.round((count/max)*100)}%;background:#c49a3c;height:100%;border-radius:4px;transition:width 0.5s"></div>
+        </div>
+        <span style="font-size:13px;font-weight:500;color:var(--text-muted);min-width:28px;text-align:right">${count}</span>
+      </div>`).join('')
+      : '<p style="font-size:13px;color:var(--text-muted)">Aucune donnée pour l\'instant. Passez des commandes pour voir les statistiques !</p>';
+  }
+}
+
+function renderHistory() {
+  const body=document.getElementById('historyBody');
+  if(!body) return;
+  if(!history.length) {
+    body.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:24px">Aucune commande dans l\'historique</td></tr>';
+    return;
+  }
+  body.innerHTML=history.map(o=>`<tr>
+    <td>#${o.id}</td>
+    <td>Table ${o.table}</td>
+    <td>${new Date(o.createdAt).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</td>
+    <td>${o.items.map(i=>`×${i.qty} ${i.name}`).join(', ')}</td>
+    <td style="font-weight:500">${o.total.toFixed(2).replace('.',',')} €</td>
+    <td><span class="status-pill sp-done">Servi</span></td>
+  </tr>`).join('');
+}
+
+function clearHistory() {
+  if(!confirm('Effacer tout l\'historique ?')) return;
+  window._fb.remove(fbRef('history'));
+}
+
+// ══ BOOT ══
+renderMenu();
+renderKitchen();
+
+// Start kitchen clock tick
+setInterval(kitchenTick, 1000);
+
+// Wait for Firebase then start listeners
+function startFirebase() {
+  listenOrders();
+  listenHistory();
+  // Set initial known IDs after first load (small delay)
+  setTimeout(()=>{
+    window._knownOrderIds = new Set(orders.map(o=>o.id));
+  }, 1500);
+}
+
+if(window._fbReady) {
+  startFirebase();
+} else {
+  window.addEventListener('fbReady', startFirebase);
+}
+
+// handle ?table=N in URL
+const urlParams=new URLSearchParams(window.location.search);
+const tp=urlParams.get('table');
+if(tp) {
+  const n=parseInt(tp);
+  if(n>=1&&n<=50) {
+    currentTable=n;
+    const sel=document.getElementById('tableSelect');
+    if(sel) sel.value=n;
+  }
+}
+</script>
+
+<!-- PASSWORD MODAL -->
+<div class="pw-modal" id="pwModal" onclick="if(event.target===this)pwClose()">
+  <div class="pw-box">
+    <div class="pw-icon">🔒</div>
+    <div class="pw-title" id="pwModal-title">Accès protégé</div>
+    <div class="pw-sub">Entrez le mot de passe pour accéder à cette section.</div>
+    <input class="pw-input" id="pwModal-input" type="password" placeholder="Mot de passe…"
+      onkeydown="if(event.key==='Enter')pwSubmit(); if(event.key==='Escape')pwClose()">
+    <div class="pw-error" id="pwModal-error"></div>
+    <div class="pw-actions">
+      <button class="pw-cancel" onclick="pwClose()">Annuler</button>
+      <button class="pw-confirm" onclick="pwSubmit()">Confirmer →</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
