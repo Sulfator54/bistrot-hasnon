@@ -231,6 +231,51 @@ h1,h2,h3 { font-family: 'Playfair Display', serif; }
   .qr-grid { grid-template-columns: repeat(2,1fr); }
 }
 
+
+/* ── MENU EDITOR ── */
+.me-cats { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+.me-cat-btn { padding:6px 14px; border-radius:20px; border:1px solid var(--border); font-size:13px; cursor:pointer; background:none; color:var(--text-muted); font-family:'DM Sans',sans-serif; transition:all 0.15s; }
+.me-cat-btn.active { background:var(--dark); color:var(--gold-light); border-color:var(--dark); }
+.me-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; margin-bottom:20px; }
+.me-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px; display:flex; flex-direction:column; gap:8px; }
+.me-card-top { display:flex; align-items:flex-start; gap:10px; }
+.me-emoji { font-size:26px; width:44px; height:44px; background:var(--amber-light); border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.me-info { flex:1; min-width:0; }
+.me-name { font-size:14px; font-weight:500; color:var(--text); }
+.me-desc { font-size:12px; color:var(--text-muted); margin-top:2px; }
+.me-foot { display:flex; align-items:center; justify-content:space-between; }
+.me-price { font-size:14px; font-weight:500; color:var(--amber); }
+.me-actions { display:flex; gap:6px; }
+.me-btn { padding:5px 10px; border-radius:var(--radius-sm); border:1px solid var(--border); font-size:12px; cursor:pointer; background:none; font-family:'DM Sans',sans-serif; color:var(--text-muted); transition:all 0.12s; }
+.me-btn:hover { background:var(--cream-dark); color:var(--text); }
+.me-btn-del { color:var(--red); border-color:rgba(139,32,32,0.2); }
+.me-btn-del:hover { background:var(--red-light); color:var(--red); }
+.me-add-btn { display:flex; align-items:center; gap:8px; padding:12px 16px; background:var(--dark); color:var(--gold-light); border:none; border-radius:var(--radius); font-size:14px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; margin-bottom:16px; transition:opacity 0.15s; }
+.me-add-btn:hover { opacity:0.85; }
+.me-empty { text-align:center; padding:32px; color:var(--text-muted); font-size:14px; border:1px dashed var(--border); border-radius:var(--radius); }
+
+/* Dish modal */
+.dish-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:300; align-items:center; justify-content:center; padding:16px; }
+.dish-modal.open { display:flex; }
+.dish-box { background:var(--surface); border-radius:16px; padding:24px; width:100%; max-width:440px; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+.dish-box h3 { font-size:17px; margin-bottom:18px; color:var(--text); }
+.dish-field { margin-bottom:14px; }
+.dish-label { font-size:12px; font-weight:500; color:var(--text-muted); margin-bottom:5px; text-transform:uppercase; letter-spacing:0.04em; }
+.dish-input { width:100%; padding:10px 12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:14px; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--cream); outline:none; transition:border-color 0.15s; }
+.dish-input:focus { border-color:var(--gold); }
+.dish-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.dish-select { width:100%; padding:10px 12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:14px; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--cream); cursor:pointer; }
+.dish-select:focus { outline:none; border-color:var(--gold); }
+.emoji-grid { display:grid; grid-template-columns:repeat(8,1fr); gap:4px; margin-top:6px; }
+.emoji-opt { font-size:20px; width:36px; height:36px; display:flex; align-items:center; justify-content:center; border-radius:var(--radius-sm); cursor:pointer; border:1.5px solid transparent; transition:all 0.1s; }
+.emoji-opt:hover { background:var(--cream-dark); }
+.emoji-opt.selected { border-color:var(--gold); background:var(--amber-light); }
+.dish-modal-foot { display:flex; gap:8px; margin-top:18px; }
+.dish-cancel { flex:1; padding:11px; border:1px solid var(--border); background:none; border-radius:var(--radius-sm); font-size:14px; cursor:pointer; font-family:'DM Sans',sans-serif; color:var(--text-muted); }
+.dish-save { flex:2; padding:11px; background:var(--dark); color:var(--gold-light); border:none; border-radius:var(--radius-sm); font-size:14px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; }
+.dish-save:hover { opacity:0.85; }
+.syncing { font-size:12px; color:var(--text-muted); display:flex; align-items:center; gap:6px; padding:4px 0; }
+
 /* ── PASSWORD MODAL ── */
 .pw-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:300; align-items:center; justify-content:center; padding:20px; }
 .pw-box { background:var(--surface); border-radius:16px; padding:28px 24px; width:100%; max-width:360px; box-shadow:0 20px 60px rgba(0,0,0,0.3); }
@@ -360,6 +405,7 @@ h1,h2,h3 { font-family: 'Playfair Display', serif; }
   </div>
   <div class="admin-tabs">
     <button class="admin-tab active" onclick="adminTab('qr',this)">QR Codes par table</button>
+    <button class="admin-tab" onclick="adminTab('menu',this)">🍽 Gestion du menu</button>
     <button class="admin-tab" onclick="adminTab('stats',this)">Statistiques</button>
     <button class="admin-tab" onclick="adminTab('history',this)">Historique</button>
   </div>
@@ -368,6 +414,26 @@ h1,h2,h3 { font-family: 'Playfair Display', serif; }
   <div class="admin-section active" id="admin-qr">
     <p style="font-size:13px;color:var(--text-muted);margin-bottom:4px">Chaque QR code pointe vers l'URL du menu pré-rempli avec le numéro de table. Imprimez-les et placez-les sur les tables.</p>
     <div class="qr-grid" id="qrGrid"></div>
+  </div>
+
+
+  <!-- MENU EDITOR -->
+  <div class="admin-section" id="admin-menu">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div>
+        <h3 style="font-size:16px;margin-bottom:2px">Gestion du menu</h3>
+        <p style="font-size:12px;color:var(--text-muted)">Les modifications sont appliquées immédiatement pour tous les clients.</p>
+      </div>
+      <button class="me-add-btn" onclick="openDishModal()">+ Ajouter un plat</button>
+    </div>
+    <div class="me-cats">
+      <button class="me-cat-btn active" onclick="meFilter('tous',this)">Tous</button>
+      <button class="me-cat-btn" onclick="meFilter('entrees',this)">Entrées</button>
+      <button class="me-cat-btn" onclick="meFilter('plats',this)">Plats</button>
+      <button class="me-cat-btn" onclick="meFilter('desserts',this)">Desserts</button>
+      <button class="me-cat-btn" onclick="meFilter('boissons',this)">Boissons</button>
+    </div>
+    <div id="meGrid" class="me-grid"></div>
   </div>
 
   <!-- STATS -->
@@ -401,7 +467,8 @@ h1,h2,h3 { font-family: 'Playfair Display', serif; }
 
 <script>
 // ══ DATA ══
-const MENU = [
+// Default menu (used as seed if Firebase is empty)
+const DEFAULT_MENU = [
   {id:1,cat:'entrees',emoji:'🥗',name:'Salade de chèvre chaud',desc:'Miel de lavande, noix, mesclun',price:9.5,badge:'pop'},
   {id:2,cat:'entrees',emoji:'🍲',name:'Velouté de saison',desc:'Crème fraîche, croûtons maison',price:7.5,badge:''},
   {id:3,cat:'entrees',emoji:'🥩',name:'Carpaccio de bœuf',desc:'Câpres, parmesan, roquette',price:12,badge:'new'},
@@ -415,6 +482,7 @@ const MENU = [
   {id:11,cat:'boissons',emoji:'🫧',name:'Eau pétillante (75cl)',desc:'San Pellegrino',price:4,badge:''},
   {id:12,cat:'boissons',emoji:'☕',name:'Café expresso',desc:'Torréfaction artisanale',price:2.5,badge:''},
 ];
+let MENU = [...DEFAULT_MENU]; // live menu, synced from Firebase
 
 // ══ STATE ══
 let cart = {};
@@ -773,12 +841,191 @@ function kitchenTick() {
 }
 
 // ══ ADMIN ══
+
+// ══ MENU EDITOR ══
+const EMOJIS = ['🥗','🍲','🥩','🐟','🍗','🥦','🥕','🧀','🍤','🦐','🦑','🐙','🥚','🍳','🥞','🥓','🌮','🌯','🥙','🧆','🍝','🍜','🍛','🍲','🥘','🫕','🍱','🍣','🥩','🍖','🍗','🌭','🍔','🍟','🍕','🫔','🥪','🧇','🥗','🫙','🧂','🥫','🫒','🧄','🧅','🌽','🥦','🥬','🍅','🍄','🥐','🥖','🧈','🍰','🎂','🧁','🍮','🍯','🍫','🍬','🍭','🍮','☕','🍵','🫖','🧋','🥤','🍺','🍷','🍸','🍹','🧃'];
+
+let meActiveCat = 'tous';
+let dishEditFbKey = null; // null = new dish
+let dishNextId = 100;
+let selectedEmoji = '🍽';
+
+function listenMenu() {
+  window._fb.onValue(fbRef('menu'), snap => {
+    const data = snap.val();
+    if (data && Object.keys(data).length > 0) {
+      MENU = Object.entries(data).map(([fbKey, d]) => ({...d, fbKey}));
+      const maxId = MENU.reduce((m,d) => Math.max(m, d.id||0), 0);
+      dishNextId = maxId + 1;
+    } else {
+      // Seed Firebase with default menu on first run
+      MENU = [];
+      DEFAULT_MENU.forEach(dish => {
+        const r = window._fb.push(fbRef('menu'));
+        window._fb.set(r, {...dish});
+      });
+      return; // listenMenu will fire again once seeded
+    }
+    renderMenu();
+    renderMenuEditor();
+  });
+}
+
+function meFilter(cat, btn) {
+  meActiveCat = cat;
+  document.querySelectorAll('.me-cat-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMenuEditor();
+}
+
+// Global dish index map: numeric idx → fbKey (avoids special char corruption in onclick)
+window._dishMap = {};
+
+function renderMenuEditor() {
+  const grid = document.getElementById('meGrid'); if(!grid) return;
+  const filtered = meActiveCat === 'tous' ? MENU : MENU.filter(d=>d.cat===meActiveCat);
+  const catLabels = {entrees:'Entrée',plats:'Plat',desserts:'Dessert',boissons:'Boisson'};
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="me-empty">Aucun plat dans cette catégorie.<br>Cliquez "+ Ajouter un plat" pour commencer.</div>';
+    return;
+  }
+  window._dishMap = {};
+  grid.innerHTML = filtered.map((d, i) => {
+    window._dishMap[i] = d.fbKey;
+    const badgeHtml = d.badge==='new'
+      ? '<span class="badge-new" style="font-size:10px">Nouveau</span>'
+      : d.badge==='pop'
+      ? '<span class="badge-pop" style="font-size:10px">Populaire</span>' : '';
+    return `<div class="me-card">
+      <div class="me-card-top">
+        <div class="me-emoji">${d.emoji}</div>
+        <div class="me-info">
+          <div class="me-name">${d.name} ${badgeHtml}</div>
+          <div class="me-desc">${d.desc||''}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:3px">${catLabels[d.cat]||d.cat}</div>
+        </div>
+      </div>
+      <div class="me-foot">
+        <span class="me-price">${parseFloat(d.price).toFixed(2).replace('.',',')} €</span>
+        <div class="me-actions">
+          <button class="me-btn" onclick="editDish(${i})">✏️ Modifier</button>
+          <button class="me-btn me-btn-del" onclick="deleteDish(${i})">🗑 Supprimer</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function buildEmojiGrid(current) {
+  const grid = document.getElementById('emojiGrid'); if(!grid) return;
+  grid.innerHTML = EMOJIS.map(e =>
+    `<div class="emoji-opt${e===current?' selected':''}" onclick="selectEmoji('${e}',this)">${e}</div>`
+  ).join('');
+}
+
+function selectEmoji(e, el) {
+  selectedEmoji = e;
+  document.querySelectorAll('.emoji-opt').forEach(el=>el.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function openDishModal() {
+  dishEditFbKey = null;
+  selectedEmoji = '🍽';
+  const modalEl = document.getElementById('dishModal');
+  modalEl.dataset.editKey = '';
+  document.getElementById('dishModal-title').textContent = 'Ajouter un plat';
+  document.getElementById('dish-name').value = '';
+  document.getElementById('dish-desc').value = '';
+  document.getElementById('dish-price').value = '';
+  document.getElementById('dish-cat').value = 'plats';
+  document.getElementById('dish-badge').value = '';
+  buildEmojiGrid(selectedEmoji);
+  modalEl.classList.add('open');
+  setTimeout(() => document.getElementById('dish-name').focus(), 50);
+}
+
+function editDish(idx) {
+  const fbKey = window._dishMap[idx];
+  const d = MENU.find(x => x.fbKey === fbKey);
+  if (!d || !fbKey) {
+    // Fallback: reload from Firebase directly
+    window._fb.get(fbRef('menu')).then(snap => {
+      const data = snap.val() || {};
+      MENU = Object.entries(data).map(([k, v]) => ({...v, fbKey: k}));
+      renderMenuEditor();
+      alert('Menu rechargé. Veuillez réessayer.');
+    });
+    return;
+  }
+  dishEditFbKey = fbKey;
+  selectedEmoji = d.emoji || '🍽';
+  document.getElementById('dishModal').dataset.editKey = fbKey;
+  document.getElementById('dishModal-title').textContent = 'Modifier — ' + d.name;
+  document.getElementById('dish-name').value = d.name;
+  document.getElementById('dish-desc').value = d.desc || '';
+  document.getElementById('dish-price').value = d.price;
+  document.getElementById('dish-cat').value = d.cat;
+  document.getElementById('dish-badge').value = d.badge || '';
+  buildEmojiGrid(selectedEmoji);
+  document.getElementById('dishModal').classList.add('open');
+  setTimeout(() => document.getElementById('dish-name').focus(), 50);
+}
+
+function closeDishModal() {
+  document.getElementById('dishModal').classList.remove('open');
+  document.getElementById('dishModal').dataset.editKey = '';
+  dishEditFbKey = null;
+}
+
+function saveDish() {
+  const name = document.getElementById('dish-name').value.trim();
+  const desc = document.getElementById('dish-desc').value.trim();
+  const price = parseFloat(document.getElementById('dish-price').value);
+  const cat = document.getElementById('dish-cat').value;
+  const badge = document.getElementById('dish-badge').value;
+
+  if (!name) { alert('Le nom du plat est obligatoire.'); return; }
+  if (isNaN(price) || price < 0) { alert('Veuillez entrer un prix valide.'); return; }
+
+  // Read fbKey from variable OR dataset fallback
+  const modalEl = document.getElementById('dishModal');
+  const resolvedKey = dishEditFbKey || modalEl.dataset.editKey || null;
+
+  const dish = { name, desc, price, cat, badge: badge||'', emoji: selectedEmoji || '🍽' };
+
+  if (resolvedKey) {
+    // ── UPDATE existing dish ──
+    const existing = MENU.find(x => x.fbKey === resolvedKey);
+    dish.id = existing ? existing.id : dishNextId++;
+    window._fb.update(fbRef('menu/' + resolvedKey), dish)
+      .then(() => { closeDishModal(); })
+      .catch(err => { alert('Erreur lors de la modification : ' + err.message); });
+  } else {
+    // ── CREATE new dish ──
+    dish.id = dishNextId++;
+    const r = window._fb.push(fbRef('menu'));
+    window._fb.set(r, dish)
+      .then(() => { closeDishModal(); })
+      .catch(err => { alert('Erreur lors de la création : ' + err.message); });
+  }
+}
+
+function deleteDish(idx) {
+  const fbKey = window._dishMap[idx];
+  const d = MENU.find(x => x.fbKey === fbKey);
+  if (!d || !fbKey) { alert('Plat introuvable. Rechargez la page.'); return; }
+  if (!confirm(`Supprimer "${d.name}" du menu ?`)) return;
+  window._fb.remove(fbRef('menu/' + fbKey));
+}
+
 function adminTab(t,btn) {
   document.querySelectorAll('.admin-tab').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.admin-section').forEach(s=>s.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('admin-'+t).classList.add('active');
   if(t==='qr') renderQR();
+  if(t==='menu') renderMenuEditor();
   if(t==='stats') renderStats();
   if(t==='history') renderHistory();
 }
@@ -892,6 +1139,7 @@ setInterval(kitchenTick, 1000);
 function startFirebase() {
   listenOrders();
   listenHistory();
+  listenMenu();
   // Set initial known IDs after first load (small delay)
   setTimeout(()=>{
     window._knownOrderIds = new Set(orders.map(o=>o.id));
@@ -916,6 +1164,53 @@ if(tp) {
   }
 }
 </script>
+
+<!-- DISH MODAL -->
+<div class="dish-modal" id="dishModal" onclick="if(event.target===this)closeDishModal()">
+  <div class="dish-box">
+    <h3 id="dishModal-title">Ajouter un plat</h3>
+    <div class="dish-field">
+      <div class="dish-label">Catégorie</div>
+      <select class="dish-select" id="dish-cat">
+        <option value="entrees">Entrées</option>
+        <option value="plats">Plats</option>
+        <option value="desserts">Desserts</option>
+        <option value="boissons">Boissons</option>
+      </select>
+    </div>
+    <div class="dish-field">
+      <div class="dish-label">Nom du plat</div>
+      <input class="dish-input" id="dish-name" type="text" placeholder="Ex : Tartare de bœuf maison">
+    </div>
+    <div class="dish-field">
+      <div class="dish-label">Description</div>
+      <input class="dish-input" id="dish-desc" type="text" placeholder="Ex : Câpres, cornichons, frites maison">
+    </div>
+    <div class="dish-row">
+      <div class="dish-field">
+        <div class="dish-label">Prix (€)</div>
+        <input class="dish-input" id="dish-price" type="number" min="0" step="0.5" placeholder="14.50">
+      </div>
+      <div class="dish-field">
+        <div class="dish-label">Badge</div>
+        <select class="dish-select" id="dish-badge">
+          <option value="">Aucun</option>
+          <option value="new">🟢 Nouveau</option>
+          <option value="pop">🔴 Populaire</option>
+        </select>
+      </div>
+    </div>
+    <div class="dish-field">
+      <div class="dish-label">Emoji</div>
+      <div class="emoji-grid" id="emojiGrid"></div>
+    </div>
+    <div class="dish-modal-foot">
+      <button class="dish-cancel" onclick="closeDishModal()">Annuler</button>
+      <button class="dish-save" onclick="saveDish()">Enregistrer →</button>
+    </div>
+  </div>
+</div>
+
 
 <!-- PASSWORD MODAL -->
 <div class="pw-modal" id="pwModal" onclick="if(event.target===this)pwClose()">
